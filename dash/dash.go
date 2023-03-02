@@ -1,0 +1,224 @@
+package dash
+
+import (
+   "strconv"
+   "strings"
+)
+
+func (r Representation) Widevine() *Content_Protection {
+   for _, c := range r.Content_Protection {
+      if c.Scheme_ID_URI == "urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed" {
+         return &c
+      }
+   }
+   return nil
+}
+
+type Representation struct {
+   Adaptation *Adaptation
+   Bandwidth int64 `xml:"bandwidth,attr"`
+   Codecs string `xml:"codecs,attr"`
+   Content_Protection []Content_Protection `xml:"ContentProtection"`
+   Height int64 `xml:"height,attr"`
+   ID string `xml:"id,attr"`
+   MIME_Type string `xml:"mimeType,attr"`
+   Segment_Template *Segment_Template `xml:"SegmentTemplate"`
+   Width int64 `xml:"width,attr"`
+}
+
+type Content_Protection struct {
+   PSSH string `xml:"pssh"`
+   Scheme_ID_URI string `xml:"schemeIdUri,attr"`
+}
+
+func (p Presentation) Representation() Representations {
+   var reps []Representation
+   for i, ada := range p.Period.Adaptation_Set {
+      for _, rep := range ada.Representation {
+         rep.Adaptation = &p.Period.Adaptation_Set[i]
+         if rep.Codecs == "" {
+            rep.Codecs = ada.Codecs
+         }
+         if rep.Content_Protection == nil {
+            rep.Content_Protection = ada.Content_Protection
+         }
+         if rep.MIME_Type == "" {
+            rep.MIME_Type = ada.MIME_Type
+         }
+         if rep.Segment_Template == nil {
+            rep.Segment_Template = ada.Segment_Template
+         }
+         reps = append(reps, rep)
+      }
+   }
+   return reps
+}
+
+func (r Representation) Initialization() string {
+   return r.replace_ID(r.Segment_Template.Initialization)
+}
+
+func (r Representation) Media() []string {
+   var start int
+   if r.Segment_Template.Start_Number != nil {
+      start = *r.Segment_Template.Start_Number
+   }
+   var refs []string
+   for _, seg := range r.Segment_Template.Segment_Timeline.S {
+      for seg.T = start; seg.R >= 0; seg.R-- {
+         ref := r.replace_ID(r.Segment_Template.Media)
+         if r.Segment_Template.Start_Number != nil {
+            ref = strings.Replace(ref, "$Number$", seg.Time(), 1)
+            seg.T++
+            start++
+         } else {
+            ref = strings.Replace(ref, "$Time$", seg.Time(), 1)
+            seg.T += seg.D
+            start += seg.D
+         }
+         refs = append(refs, ref)
+      }
+   }
+   return refs
+}
+
+func (r Representations) Filter(f func(Representation) bool) Representations {
+   var carry []Representation
+   for _, item := range r {
+      if f(item) {
+         carry = append(carry, item)
+      }
+   }
+   return carry
+}
+
+func (r Representations) Video() Representations {
+   return r.Filter(func(a Representation) bool {
+      return a.MIME_Type == "video/mp4"
+   })
+}
+
+func (r Representations) Audio() Representations {
+   return r.Filter(func(a Representation) bool {
+      return a.MIME_Type == "audio/mp4"
+   })
+}
+
+func (r Representations) Index(f func(a, b Representation) bool) int {
+   carry := -1
+   for i, item := range r {
+      if carry == -1 || f(r[carry], item) {
+         carry = i
+      }
+   }
+   return carry
+}
+
+func (r Representations) Bandwidth(v int64) int {
+   distance := func(a Representation) int64 {
+      if a.Bandwidth > v {
+         return a.Bandwidth - v
+      }
+      return v - a.Bandwidth
+   }
+   return r.Index(func(carry, item Representation) bool {
+      return distance(item) < distance(carry)
+   })
+}
+
+func (r Representation) String() string {
+   var b []byte
+   b = append(b, "ID:"...)
+   b = append(b, r.ID...)
+   if r.Width + r.Bandwidth >= 1 {
+      b = append(b, "\n  "...)
+   }
+   if r.Width >= 1 {
+      b = append(b, "Width:"...)
+      b = strconv.AppendInt(b, r.Width, 10)
+      b = append(b, " Height:"...)
+      b = strconv.AppendInt(b, r.Height, 10)
+   }
+   if r.Bandwidth >= 1 {
+      if r.Width >= 1 {
+         b = append(b, ' ')
+      }
+      b = append(b, "Bandwidth:"...)
+      b = strconv.AppendInt(b, r.Bandwidth, 10)
+   }
+   b = append(b, "\n  MIME Type:"...)
+   b = append(b, r.MIME_Type...)
+   if r.Codecs != "" {
+      b = append(b, " Codecs:"...)
+      b = append(b, r.Codecs...)
+   }
+   if r.Adaptation.Lang != "" {
+      b = append(b, " Lang:"...)
+      b = append(b, r.Adaptation.Lang...)
+   }
+   if r.Adaptation.Role != nil {
+      b = append(b, " Role:"...)
+      b = append(b, r.Adaptation.Role.Value...)
+   }
+   return string(b)
+}
+
+type Segment struct {
+   D int `xml:"d,attr"` // duration
+   R int `xml:"r,attr"` // repeat
+   T int `xml:"t,attr"` // time
+}
+
+func (s Segment) Time() string {
+   return strconv.Itoa(s.T)
+}
+
+type Segment_Template struct {
+   Initialization string `xml:"initialization,attr"`
+   Media string `xml:"media,attr"`
+   Segment_Timeline struct {
+      S []Segment
+   } `xml:"SegmentTimeline"`
+   Start_Number *int `xml:"startNumber,attr"`
+}
+
+type Representations []Representation
+
+type Adaptation struct {
+   Codecs string `xml:"codecs,attr"`
+   Content_Protection []Content_Protection `xml:"ContentProtection"`
+   Lang string `xml:"lang,attr"`
+   MIME_Type string `xml:"mimeType,attr"`
+   Role *struct {
+      Value string `xml:"value,attr"`
+   }
+   Segment_Template *Segment_Template `xml:"SegmentTemplate"`
+   Representation []Representation
+}
+
+type Presentation struct {
+   Period struct {
+      Adaptation_Set []Adaptation `xml:"AdaptationSet"`
+   }
+}
+
+func (r Representation) Ext() string {
+   switch r.MIME_Type {
+   case "video/mp4":
+      return ".m4v"
+   case "audio/mp4":
+      return ".m4a"
+   }
+   return ""
+}
+
+func (r Representation) Role() string {
+   if r.Adaptation.Role == nil {
+      return ""
+   }
+   return r.Adaptation.Role.Value
+}
+
+func (r Representation) replace_ID(s string) string {
+   return strings.Replace(s, "$RepresentationID$", r.ID, 1)
+}
