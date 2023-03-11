@@ -1,6 +1,7 @@
 package dash
 
 import (
+   "encoding/json"
    "encoding/xml"
    "fmt"
    "net/http"
@@ -8,6 +9,43 @@ import (
    "strings"
    "testing"
 )
+
+var tests = []string{
+   "mpd/amc.mpd",
+   "mpd/paramount-lang.mpd",
+   "mpd/paramount-role.mpd",
+   "mpd/roku.mpd",
+}
+
+func Test_Info(t *testing.T) {
+   enc := json.NewEncoder(os.Stdout)
+   enc.SetIndent("", "   ")
+   for _, name := range tests {
+      file, err := os.Open(name)
+      if err != nil {
+         t.Fatal(err)
+      }
+      var pre Presentation
+      if err := xml.NewDecoder(file).Decode(&pre); err != nil {
+         t.Fatal(err)
+      }
+      if err := file.Close(); err != nil {
+         t.Fatal(err)
+      }
+      fmt.Println(name)
+      reps := pre.Representation()
+      for _, rep := range reps.Audio() {
+         enc.Encode(rep)
+         break
+      }
+      for _, rep := range reps.Video() {
+         enc.Encode(rep)
+         break
+      }
+      break
+      fmt.Println()
+   }
+}
 
 func Test_Media(t *testing.T) {
    file, err := os.Open("mpd/roku.mpd")
@@ -33,14 +71,6 @@ func Test_Media(t *testing.T) {
       req.URL = base.URL.ResolveReference(req.URL)
       fmt.Println(req.URL)
    }
-}
-
-var tests = []string{
-   "mpd/amc-clear.mpd",
-   "mpd/amc-protected.mpd",
-   "mpd/paramount-lang.mpd",
-   "mpd/paramount-role.mpd",
-   "mpd/roku.mpd",
 }
 
 func Test_Audio(t *testing.T) {
@@ -99,31 +129,6 @@ func Test_Video(t *testing.T) {
          if i == reps.Bandwidth(0) {
             fmt.Print("!")
          }
-         fmt.Println(rep)
-      }
-      fmt.Println()
-   }
-}
-
-func Test_Info(t *testing.T) {
-   for _, name := range tests {
-      file, err := os.Open(name)
-      if err != nil {
-         t.Fatal(err)
-      }
-      var pre Presentation
-      if err := xml.NewDecoder(file).Decode(&pre); err != nil {
-         t.Fatal(err)
-      }
-      if err := file.Close(); err != nil {
-         t.Fatal(err)
-      }
-      fmt.Println(name)
-      reps := pre.Representation()
-      for _, rep := range reps.Video() {
-         fmt.Println(rep)
-      }
-      for _, rep := range reps.Audio() {
          fmt.Println(rep)
       }
       fmt.Println()

@@ -5,13 +5,53 @@ import (
    "strings"
 )
 
-func (r Representation) Widevine() *Content_Protection {
-   for _, c := range r.Content_Protection {
-      if c.Scheme_ID_URI == "urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed" {
-         return &c
-      }
+func (r Representation) String() string {
+   var b []byte
+   b = append(b, "ID:"...)
+   b = append(b, r.ID...)
+   if r.Width + r.Bandwidth >= 1 {
+      b = append(b, "\n  "...)
    }
-   return nil
+   if r.Width >= 1 {
+      b = append(b, "Width:"...)
+      b = strconv.AppendInt(b, r.Width, 10)
+      b = append(b, " Height:"...)
+      b = strconv.AppendInt(b, r.Height, 10)
+   }
+   if r.Bandwidth >= 1 {
+      if r.Width >= 1 {
+         b = append(b, ' ')
+      }
+      b = append(b, "Bandwidth:"...)
+      b = strconv.AppendInt(b, r.Bandwidth, 10)
+   }
+   b = append(b, "\n  MIME Type:"...)
+   b = append(b, r.MIME_Type...)
+   if r.Codecs != "" {
+      b = append(b, " Codecs:"...)
+      b = append(b, r.Codecs...)
+   }
+   if r.Adaptation.Lang != "" {
+      b = append(b, " Lang:"...)
+      b = append(b, r.Adaptation.Lang...)
+   }
+   if r.Adaptation.Role != nil {
+      b = append(b, " Role:"...)
+      b = append(b, r.Adaptation.Role.Value...)
+   }
+   return string(b)
+}
+
+type Adaptation struct {
+   Codecs string `xml:"codecs,attr"`
+   Content_Protection []Content_Protection `xml:"ContentProtection"`
+   Lang string `xml:"lang,attr"`
+   MIME_Type string `xml:"mimeType,attr"`
+   Role *struct {
+      Value string `xml:"value,attr"`
+   }
+   Segment_Template *Segment_Template `xml:"SegmentTemplate"`
+   Representation []Representation
 }
 
 type Representation struct {
@@ -24,6 +64,15 @@ type Representation struct {
    MIME_Type string `xml:"mimeType,attr"`
    Segment_Template *Segment_Template `xml:"SegmentTemplate"`
    Width int64 `xml:"width,attr"`
+}
+
+func (r Representation) Widevine() *Content_Protection {
+   for _, c := range r.Content_Protection {
+      if c.Scheme_ID_URI == "urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed" {
+         return &c
+      }
+   }
+   return nil
 }
 
 type Content_Protection struct {
@@ -126,43 +175,6 @@ func (r Representations) Bandwidth(v int64) int {
    })
 }
 
-func (r Representation) String() string {
-   var b []byte
-   b = append(b, "ID:"...)
-   b = append(b, r.ID...)
-   if r.Width + r.Bandwidth >= 1 {
-      b = append(b, "\n  "...)
-   }
-   if r.Width >= 1 {
-      b = append(b, "Width:"...)
-      b = strconv.AppendInt(b, r.Width, 10)
-      b = append(b, " Height:"...)
-      b = strconv.AppendInt(b, r.Height, 10)
-   }
-   if r.Bandwidth >= 1 {
-      if r.Width >= 1 {
-         b = append(b, ' ')
-      }
-      b = append(b, "Bandwidth:"...)
-      b = strconv.AppendInt(b, r.Bandwidth, 10)
-   }
-   b = append(b, "\n  MIME Type:"...)
-   b = append(b, r.MIME_Type...)
-   if r.Codecs != "" {
-      b = append(b, " Codecs:"...)
-      b = append(b, r.Codecs...)
-   }
-   if r.Adaptation.Lang != "" {
-      b = append(b, " Lang:"...)
-      b = append(b, r.Adaptation.Lang...)
-   }
-   if r.Adaptation.Role != nil {
-      b = append(b, " Role:"...)
-      b = append(b, r.Adaptation.Role.Value...)
-   }
-   return string(b)
-}
-
 type Segment struct {
    D int `xml:"d,attr"` // duration
    R int `xml:"r,attr"` // repeat
@@ -183,18 +195,6 @@ type Segment_Template struct {
 }
 
 type Representations []Representation
-
-type Adaptation struct {
-   Codecs string `xml:"codecs,attr"`
-   Content_Protection []Content_Protection `xml:"ContentProtection"`
-   Lang string `xml:"lang,attr"`
-   MIME_Type string `xml:"mimeType,attr"`
-   Role *struct {
-      Value string `xml:"value,attr"`
-   }
-   Segment_Template *Segment_Template `xml:"SegmentTemplate"`
-   Representation []Representation
-}
 
 type Presentation struct {
    Period struct {
