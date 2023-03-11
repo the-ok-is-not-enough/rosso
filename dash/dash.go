@@ -6,40 +6,55 @@ import (
 )
 
 func (r Representation) String() string {
+   b := r.Marshal_Indent("\t")
+   return string(b)
+}
+
+func (r Representation) Marshal_Indent(indent string) []byte {
    var b []byte
-   b = append(b, "ID:"...)
+   b = append(b, "ID: "...)
    b = append(b, r.ID...)
-   if r.Width + r.Bandwidth >= 1 {
-      b = append(b, "\n  "...)
-   }
    if r.Width >= 1 {
-      b = append(b, "Width:"...)
+      b = append(b, '\n')
+      b = append(b, indent...)
+      b = append(b, "width: "...)
       b = strconv.AppendInt(b, r.Width, 10)
-      b = append(b, " Height:"...)
+   }
+   if r.Height >= 1 {
+      b = append(b, '\n')
+      b = append(b, indent...)
+      b = append(b, "height: "...)
       b = strconv.AppendInt(b, r.Height, 10)
    }
    if r.Bandwidth >= 1 {
-      if r.Width >= 1 {
-         b = append(b, ' ')
-      }
-      b = append(b, "Bandwidth:"...)
+      b = append(b, '\n')
+      b = append(b, indent...)
+      b = append(b, "bandwidth: "...)
       b = strconv.AppendInt(b, r.Bandwidth, 10)
    }
-   b = append(b, "\n  MIME Type:"...)
-   b = append(b, r.MIME_Type...)
    if r.Codecs != "" {
-      b = append(b, " Codecs:"...)
+      b = append(b, '\n')
+      b = append(b, indent...)
+      b = append(b, "codecs: "...)
       b = append(b, r.Codecs...)
    }
-   if r.Adaptation.Lang != "" {
-      b = append(b, " Lang:"...)
-      b = append(b, r.Adaptation.Lang...)
-   }
+   b = append(b, '\n')
+   b = append(b, indent...)
+   b = append(b, "MIME type: "...)
+   b = append(b, r.MIME_Type...)
    if r.Adaptation.Role != nil {
-      b = append(b, " Role:"...)
+      b = append(b, '\n')
+      b = append(b, indent...)
+      b = append(b, "role: "...)
       b = append(b, r.Adaptation.Role.Value...)
    }
-   return string(b)
+   if r.Adaptation.Lang != "" {
+      b = append(b, '\n')
+      b = append(b, indent...)
+      b = append(b, "lang: "...)
+      b = append(b, r.Adaptation.Lang...)
+   }
+   return b
 }
 
 type Adaptation struct {
