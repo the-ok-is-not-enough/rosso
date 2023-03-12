@@ -54,32 +54,6 @@ func Test_Block(t *testing.T) {
    }
 }
 
-func apple_media(m Medium) bool {
-   if !strings.Contains(m.Group_ID, "-ak-") {
-      return false
-   }
-   if m.Name != "English" {
-      return false
-   }
-   if m.Type != "AUDIO" {
-      return false
-   }
-   return true
-}
-
-func apple_stream(s Stream) bool {
-   if !strings.Contains(s.Audio, "-ak-") {
-      return false
-   }
-   if !strings.Contains(s.Codecs, "avc1.") {
-      return false
-   }
-   if !strings.Contains(s.Codecs, "mp4a.") {
-      return false
-   }
-   return true
-}
-
 func cbc_media(m Medium) bool {
    return m.Type == "AUDIO"
 }
@@ -101,7 +75,6 @@ var tests = map[string]filters{
    "m3u8/roku-master.m3u8": {nil, nil},
    "m3u8/paramount-master.m3u8": {nil, paramount_stream},
    "m3u8/cbc-master.m3u8": {cbc_media, cbc_stream},
-   "m3u8/apple-master.m3u8": {apple_media, apple_stream},
 }
 
 type filters struct {

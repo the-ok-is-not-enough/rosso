@@ -1,29 +1,31 @@
 package hls
 
 import (
+   "bytes"
    "fmt"
    "os"
+   "sort"
    "testing"
 )
 
 func Test_Info(t *testing.T) {
-   for key, val := range tests {
-      file, err := os.Open(key)
+   for test := range tests {
+      buf, err := os.ReadFile(test + ".txt")
       if err != nil {
          t.Fatal(err)
       }
-      master, err := New_Scanner(file).Master()
+      sort.SliceStable(buf, func(int, int) bool {
+         return true
+      })
+      master, err := New_Scanner(bytes.NewReader(buf)).Master()
       if err != nil {
          t.Fatal(err)
       }
-      if err := file.Close(); err != nil {
-         t.Fatal(err)
-      }
-      fmt.Println(key)
-      for _, item := range master.Streams.Filter(val.stream) {
+      fmt.Println(test)
+      for _, item := range master.Streams {
          fmt.Println(item)
       }
-      for _, item := range master.Media.Filter(val.medium) {
+      for _, item := range master.Media {
          fmt.Println(item)
       }
       fmt.Println()
