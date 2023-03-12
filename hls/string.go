@@ -5,51 +5,8 @@ import (
    "strings"
 )
 
-func (m Stream) String() string {
-   var b []byte
-   if m.Resolution != "" {
-      b = append(b, "Resolution:"...)
-      b = append(b, m.Resolution...)
-      b = append(b, ' ')
-   }
-   b = append(b, "Bandwidth:"...)
-   b = strconv.AppendInt(b, m.Bandwidth, 10)
-   if m.Codecs != "" {
-      b = append(b, " Codecs:"...)
-      b = append(b, m.Codecs...)
-   }
-   if m.Audio != "" {
-      b = append(b, "\n  Audio:"...)
-      b = append(b, m.Audio...)
-   }
-   return string(b)
-}
-
-type Stream struct {
-   Audio string
-   Bandwidth int64
-   Codecs string
-   Resolution string
-   Raw_URI string
-}
-
 func (Medium) Ext() string {
    return ".m4a"
-}
-
-func (m Medium) String() string {
-   var buf strings.Builder
-   buf.WriteString("Type:")
-   buf.WriteString(m.Type)
-   buf.WriteString(" Name:")
-   buf.WriteString(m.Name)
-   buf.WriteString("\n  Group ID:")
-   buf.WriteString(m.Group_ID)
-   if m.Characteristics != "" {
-      buf.WriteString("\n  Characteristics:")
-      buf.WriteString(m.Characteristics)
-   }
-   return buf.String()
 }
 
 func (m Medium) URI() string {
@@ -65,9 +22,51 @@ func (m Stream) URI() string {
 }
 
 type Medium struct {
-   Characteristics string
    Group_ID string
    Name string
    Raw_URI string
    Type string
+   Characteristics string
+}
+
+func (m Medium) String() string {
+   var b strings.Builder
+   b.WriteString("group ID: ")
+   b.WriteString(m.Group_ID)
+   b.WriteString("\nname: ")
+   b.WriteString(m.Name)
+   b.WriteString("\ntype: ")
+   b.WriteString(m.Type)
+   if m.Characteristics != "" {
+      b.WriteString("\ncharacteristics: ")
+      b.WriteString(m.Characteristics)
+   }
+   return b.String()
+}
+
+type Stream struct {
+   Bandwidth int64
+   Raw_URI string
+   Audio string
+   Codecs string
+   Resolution string
+}
+
+func (m Stream) String() string {
+   var b []byte
+   b = append(b, "bandwidth: "...)
+   b = strconv.AppendInt(b, m.Bandwidth, 10)
+   if m.Audio != "" {
+      b = append(b, "\naudio: "...)
+      b = append(b, m.Audio...)
+   }
+   if m.Codecs != "" {
+      b = append(b, "\ncodecs: "...)
+      b = append(b, m.Codecs...)
+   }
+   if m.Resolution != "" {
+      b = append(b, "\nresolution: "...)
+      b = append(b, m.Resolution...)
+   }
+   return string(b)
 }
