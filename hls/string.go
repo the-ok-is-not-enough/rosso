@@ -47,8 +47,6 @@ func (m Medium) String() string {
    return string(b)
 }
 
-//////////////////////////////////////////////////////////
-
 func (m Stream) Marshal_Indent(indent string) []byte {
    var b []byte
    b = append(b, "bandwidth: "...)
