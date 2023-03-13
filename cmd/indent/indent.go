@@ -19,8 +19,8 @@ func (f flags) indent_xml() error {
       if err != nil {
          return err
       }
+      defer dst.Close()
    }
-   defer dst.Close()
    return xml.Indent(dst, src, "", " ")
 }
 
