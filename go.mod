@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/Eyevinn/mp4ff v0.34.1
 	github.com/refraction-networking/utls v1.3.1
-	google.golang.org/protobuf v1.29.1
+	google.golang.org/protobuf v1.30.0
 )
 
 require (
