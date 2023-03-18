@@ -1,26 +1,38 @@
-package main
+package http
 
 import (
+   "io"
    "net/http"
-   "net/http/httputil"
    "net/url"
-   "os"
 )
 
-func main() {
-   var req http.Request
-   req.URL = new(url.URL)
-   req.URL.Host = "example.com"
-   req.URL.Scheme = "http"
-   req.Header = make(http.Header)
-   res, err := new(http.Transport).RoundTrip(&req)
-   if err != nil {
-      panic(err)
+type Request struct {
+   *http.Request
+}
+
+func New_Request() Request {
+   var r Request
+   // first
+   r.Request = new(http.Request)
+   // second
+   r.Header = make(http.Header)
+   r.URL = new(url.URL)
+   return r
+}
+
+func (r Request) Set_Body(body io.Reader) {
+   var ok bool
+   r.Body, ok = body.(io.ReadCloser)
+   if !ok {
+      r.Body = io.NopCloser(body)
    }
-   defer res.Body.Close()
-   res_body, err := httputil.DumpResponse(res, true)
+}
+
+func (r Request) Set_URL(ref string) error {
+   var err error
+   r.URL, err = url.Parse(ref)
    if err != nil {
-      panic(err)
+      return err
    }
-   os.Stdout.Write(res_body)
+   return nil
 }
