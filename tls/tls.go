@@ -1,15 +1,209 @@
 package tls
 
 import (
-   "bytes"
-   "crypto/md5"
    "encoding/binary"
-   "encoding/hex"
    "github.com/refraction-networking/utls"
    "io"
    "net"
    "net/http"
+   "strconv"
+   "strings"
 )
+
+func extension_type(ext tls.TLSExtension) (uint16, error) {
+   pad, ok := ext.(*tls.UtlsPaddingExtension)
+   if ok {
+      pad.WillPad = true
+      ext = pad
+   }
+   buf, err := io.ReadAll(ext)
+   if err != nil || len(buf) <= 1 {
+      return 0, err
+   }
+   return binary.BigEndian.Uint16(buf), nil
+}
+
+// encoding.BinaryUnmarshaler
+func (c Client_Hello) UnmarshalBinary(data []byte) error {
+   // unsupported extension 0x16
+   printer := tls.Fingerprinter{AllowBluntMimicry: true}
+   var err error
+   c.ClientHelloSpec, err = printer.FingerprintClientHello(data)
+   if err != nil {
+      return err
+   }
+   // If SupportedVersionsExtension is present, then TLSVersMax is set to zero.
+   // In which case we need to manually read the bytes.
+   if c.TLSVersMax == 0 {
+      // \x16\x03\x01\x00\xbc\x01\x00\x00\xb8\x03\x03
+      c.TLSVersMax = binary.BigEndian.Uint16(data[9:])
+   }
+   return nil
+}
+
+// encoding.TextUnmarshaler using JA3
+func (c Client_Hello) UnmarshalText(text []byte) error {
+   var (
+      extensions string
+      info tls.ClientHelloInfo
+   )
+   for i, field := range strings.SplitN(string(text), ",", 5) {
+      switch i {
+      case 0:
+         // TLSVersMin is the record version, TLSVersMax is the handshake
+         // version
+         v, err := strconv.ParseUint(field, 10, 16)
+         if err != nil {
+            return err
+         }
+         c.TLSVersMax = uint16(v)
+      case 1:
+         // build CipherSuites
+         for _, s := range strings.Split(field, "-") {
+            v, err := strconv.ParseUint(s, 10, 16)
+            if err != nil {
+               return err
+            }
+            c.CipherSuites = append(c.CipherSuites, uint16(v))
+         }
+      case 2:
+         extensions = field
+      case 3:
+         for _, s := range strings.Split(field, "-") {
+            v, err := strconv.ParseUint(s, 10, 16)
+            if err != nil {
+               return err
+            }
+            info.SupportedCurves = append(info.SupportedCurves, tls.CurveID(v))
+         }
+      case 4:
+         for _, s := range strings.Split(field, "-") {
+            v, err := strconv.ParseUint(s, 10, 8)
+            if err != nil {
+               return err
+            }
+            info.SupportedPoints = append(info.SupportedPoints, uint8(v))
+         }
+      }
+   }
+   // build extenions list
+   for _, s := range strings.Split(extensions, "-") {
+      var ext tls.TLSExtension
+      switch s {
+      case "0":
+         // Android API 24
+         ext = &tls.SNIExtension{}
+      case "5":
+         // Android API 26
+         ext = &tls.StatusRequestExtension{}
+      case "10":
+         ext = &tls.SupportedCurvesExtension{Curves: info.SupportedCurves}
+      case "11":
+         ext = &tls.SupportedPointsExtension{
+            SupportedPoints: info.SupportedPoints,
+         }
+      case "13":
+         ext = &tls.SignatureAlgorithmsExtension{
+            SupportedSignatureAlgorithms: []tls.SignatureScheme{
+               // Android API 24
+               tls.ECDSAWithP256AndSHA256,
+               // httpbin.org
+               tls.PKCS1WithSHA256,
+            },
+         }
+      case "16":
+         // Android API 24
+         ext = &tls.ALPNExtension{
+            AlpnProtocols: []string{"http/1.1"},
+         }
+      case "23":
+         // Android API 24
+         ext = &tls.UtlsExtendedMasterSecretExtension{}
+      case "27":
+         // Google Chrome
+         ext = &tls.UtlsCompressCertExtension{
+            Algorithms: []tls.CertCompressionAlgo{tls.CertCompressionBrotli},
+         }
+      case "43":
+         // Android API 29
+         ext = &tls.SupportedVersionsExtension{
+            Versions: []uint16{tls.VersionTLS12},
+         }
+      case "45":
+         // Android API 29
+         ext = &tls.PSKKeyExchangeModesExtension{
+            Modes: []uint8{tls.PskModeDHE},
+         }
+      case "65281":
+         // Android API 24
+         ext = &tls.RenegotiationInfoExtension{}
+      default:
+         v, err := strconv.ParseUint(s, 10, 16)
+         if err != nil {
+            return err
+         }
+         ext = &tls.GenericExtension{Id: uint16(v)}
+      }
+      c.Extensions = append(c.Extensions, ext)
+   }
+   // uTLS does not support 0x0 as min version
+   c.TLSVersMin = tls.VersionTLS10
+   return nil
+}
+
+// encoding.TextMarshaler using JA3
+func (c Client_Hello) MarshalText() ([]byte, error) {
+   var b []byte
+   // TLSVersMin is the record version, TLSVersMax is the handshake version
+   b = strconv.AppendUint(b, uint64(c.TLSVersMax), 10)
+   // Cipher Suites
+   b = append(b, ',')
+   for key, val := range c.CipherSuites {
+      if key >= 1 {
+         b = append(b, '-')
+      }
+      b = strconv.AppendUint(b, uint64(val), 10)
+   }
+   // Extensions
+   b = append(b, ',')
+   var (
+      curves []tls.CurveID
+      points []uint8
+   )
+   for key, val := range c.Extensions {
+      switch ext := val.(type) {
+      case *tls.SupportedCurvesExtension:
+         curves = ext.Curves
+      case *tls.SupportedPointsExtension:
+         points = ext.SupportedPoints
+      }
+      typ, err := extension_type(val)
+      if err != nil {
+         return nil, err
+      }
+      if key >= 1 {
+         b = append(b, '-')
+      }
+      b = strconv.AppendUint(b, uint64(typ), 10)
+   }
+   // Elliptic curves
+   b = append(b, ',')
+   for key, val := range curves {
+      if key >= 1 {
+         b = append(b, '-')
+      }
+      b = strconv.AppendUint(b, uint64(val), 10)
+   }
+   // ECPF
+   b = append(b, ',')
+   for key, val := range points {
+      if key >= 1 {
+         b = append(b, '-')
+      }
+      b = strconv.AppendUint(b, uint64(val), 10)
+   }
+   return b, nil
+}
 
 type Client_Hello struct {
    *tls.ClientHelloSpec
@@ -47,70 +241,3 @@ func (c Client_Hello) Transport() *http.Transport {
    return &tr
 }
 
-// 8fcaa9e4a15f48af0a7d396e3fa5c5eb
-func Android_API_24() []byte {
-   var b bytes.Buffer
-   b.WriteString("771,49195-49196-52393-49199-49200-52392-158-159")
-   b.WriteString("-49161-49162-49171-49172-51-57-156-157-47-53")
-   b.WriteString(",65281-0-23-35-13-16-11-10,23,0")
-   return b.Bytes()
-}
-
-// 9fc6ef6efc99b933c5e2d8fcf4f68955
-func Android_API_25() []byte {
-   var b bytes.Buffer
-   b.WriteString("771,49195-49196-52393-49199-49200-52392-158-159")
-   b.WriteString("-49161-49162-49171-49172-51-57-156-157-47-53")
-   b.WriteString(",65281-0-23-35-13-16-11-10,23-24-25,0")
-   return b.Bytes()
-}
-
-// d8c87b9bfde38897979e41242626c2f3
-func Android_API_26() []byte {
-   var b bytes.Buffer
-   b.WriteString("771,49195-49196-52393-49199-49200-52392")
-   b.WriteString("-49161-49162-49171-49172-156-157-47-53")
-   b.WriteString(",65281-0-23-35-13-5-16-11-10,29-23-24,0")
-   return b.Bytes()
-}
-
-// 9b02ebd3a43b62d825e1ac605b621dc8
-func Android_API_29() []byte {
-   var b bytes.Buffer
-   b.WriteString("771,4865-4866-4867-49195-49196-52393-49199-49200-52392")
-   b.WriteString("-49161-49162-49171-49172-156-157-47-53")
-   b.WriteString(",0-23-65281-10-11-35-16-5-13-51-45-43-21,29-23-24,0")
-   return b.Bytes()
-}
-
-// same as API 29
-func Android_API_32() []byte {
-   return Android_API_29()
-}
-
-func Android_API() []byte {
-   // this is currently the shortest one
-   return Android_API_26()
-}
-
-func Fingerprint(ja3 []byte) []byte {
-   hash := md5.New()
-   hash.Write(ja3)
-   src := hash.Sum(nil)
-   dst := make([]byte, hex.EncodedLen(len(src)))
-   hex.Encode(dst, src)
-   return dst
-}
-
-func extension_type(ext tls.TLSExtension) (uint16, error) {
-   pad, ok := ext.(*tls.UtlsPaddingExtension)
-   if ok {
-      pad.WillPad = true
-      ext = pad
-   }
-   buf, err := io.ReadAll(ext)
-   if err != nil || len(buf) <= 1 {
-      return 0, err
-   }
-   return binary.BigEndian.Uint16(buf), nil
-}

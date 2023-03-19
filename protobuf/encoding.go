@@ -7,6 +7,21 @@ import (
    "sort"
 )
 
+func (m Message) Marshal() []byte {
+   var nums []Number
+   for num := range m {
+      nums = append(nums, num)
+   }
+   sort.Slice(nums, func(a, b int) bool {
+      return nums[a] < nums[b]
+   })
+   var bufs []byte
+   for _, num := range nums {
+      bufs = m[num].encode(bufs, num)
+   }
+   return bufs
+}
+
 func Unmarshal(buf []byte) (Message, error) {
    if len(buf) == 0 {
       return nil, io.ErrUnexpectedEOF
@@ -36,21 +51,4 @@ func Unmarshal(buf []byte) (Message, error) {
       }
    }
    return mes, nil
-}
-
-func (m Message) Marshal() []byte {
-   var (
-      nums []Number
-      bufs []byte
-   )
-   for num := range m {
-      nums = append(nums, num)
-   }
-   sort.Slice(nums, func(a, b int) bool {
-      return nums[a] < nums[b]
-   })
-   for _, num := range nums {
-      bufs = m[num].encode(bufs, num)
-   }
-   return bufs
 }
