@@ -5,11 +5,33 @@ import (
    "unicode/utf8"
 )
 
+// go.dev/ref/spec#String_literals
+func can_backquote(s string) bool {
+   for _, item := range s {
+      if item == '\r' {
+         return false
+      }
+      if item == '`' {
+         return false
+      }
+      if binary(item) {
+         return false
+      }
+   }
+   return utf8.ValidString(s)
+}
+
+func Quote(s string) string {
+   if can_backquote(s) {
+      return "`" + s + "`"
+   }
+   return strconv.Quote(s)
+}
+
 var (
    AppendInt = strconv.AppendInt
    AppendQuote = strconv.AppendQuote
    AppendUint = strconv.AppendUint
-   Quote = strconv.Quote
 )
 
 type Number float64
@@ -115,20 +137,4 @@ func Valid(p []byte) bool {
       }
    }
    return utf8.Valid(p)
-}
-
-func Can_Backquote(s string) bool {
-   for _, item := range s {
-      // go.dev/ref/spec#String_literals
-      if item == '\r' {
-         return false
-      }
-      if item == '`' {
-         return false
-      }
-      if binary(item) {
-         return false
-      }
-   }
-   return utf8.ValidString(s)
 }
