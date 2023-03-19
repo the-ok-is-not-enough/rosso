@@ -2,16 +2,12 @@ package http
 
 import (
    "2a.pages.dev/rosso/strconv"
-   "bufio"
    "bytes"
    "errors"
    "io"
    "net/http"
    "net/http/httputil"
-   "net/textproto"
-   "net/url"
    "os"
-   "strings"
    "time"
 )
 
@@ -90,46 +86,8 @@ func (c Client) Transport(tr *http.Transport) Client {
 }
 
 type Redirect_Func func(*http.Request, []*http.Request) error
-var NewRequest = http.NewRequest
 
-func Read_Request(in io.Reader) (*http.Request, error) {
-   var req http.Request
-   text := textproto.NewReader(bufio.NewReader(in))
-   // .Method
-   raw_method_path, err := text.ReadLine()
-   if err != nil {
-      return nil, err
-   }
-   method_path := strings.Fields(raw_method_path)
-   req.Method = method_path[0]
-   // .URL
-   ref, err := url.Parse(method_path[1])
-   if err != nil {
-      return nil, err
-   }
-   req.URL = ref
-   // .URL.Host
-   head, err := text.ReadMIMEHeader()
-   if err != nil {
-      return nil, err
-   }
-   if req.URL.Host == "" {
-      req.URL.Host = head.Get("Host")
-   }
-   // .Header
-   req.Header = http.Header(head)
-   // .Body
-   buf := new(bytes.Buffer)
-   length, err := text.R.WriteTo(buf)
-   if err != nil {
-      return nil, err
-   }
-   if length >= 1 {
-      req.Body = io.NopCloser(buf)
-   }
-   req.ContentLength = length
-   return &req, nil
-}
+var NewRequest = http.NewRequest
 
 type Cookie = http.Cookie
 

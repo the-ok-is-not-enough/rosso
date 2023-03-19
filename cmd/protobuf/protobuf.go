@@ -7,16 +7,19 @@ import (
    "os"
 )
 
+type flags struct {
+   input string
+   output string
+}
+
 func main() {
-   // f
-   var input string
-   flag.StringVar(&input, "f", "", "input file")
-   // o
-   var output string
-   flag.StringVar(&output, "o", "", "output file")
+   var f flags
+   flag.StringVar(&f.input, "f", "", "input file")
+   flag.StringVar(&f.output, "o", "", "output file")
    flag.Parse()
-   if input != "" {
-      err := do_protobuf(input, output)
+   
+   if f.input != "" {
+      err := f.protobuf()
       if err != nil {
          panic(err)
       }
@@ -25,8 +28,8 @@ func main() {
    }
 }
 
-func do_protobuf(input, output string) error {
-   data, err := os.ReadFile(input)
+func (f flags) protobuf() error {
+   data, err := os.ReadFile(f.input)
    if err != nil {
       return err
    }
@@ -34,11 +37,14 @@ func do_protobuf(input, output string) error {
    if err != nil {
       return err
    }
-   file, err := os.Create(output)
-   if err != nil {
-      file = os.Stdout
+   file := os.Stdout
+   if f.output != "" {
+      file, err := os.Create(f.output)
+      if err != nil {
+         return err
+      }
+      defer file.Close()
    }
-   defer file.Close()
    enc := json.NewEncoder(file)
    enc.SetEscapeHTML(false)
    enc.SetIndent("", " ")

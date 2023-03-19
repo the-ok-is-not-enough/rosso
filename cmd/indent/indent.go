@@ -8,20 +8,20 @@ import (
 )
 
 func (f flags) indent_xml() error {
-   src, err := os.Open(f.input)
+   in, err := os.Open(f.input)
    if err != nil {
       return err
    }
-   defer src.Close()
-   dst := os.Stdout
+   defer in.Close()
+   out := os.Stdout
    if f.output != "" {
-      dst, err = os.Create(f.output)
+      out, err = os.Create(f.output)
       if err != nil {
          return err
       }
-      defer dst.Close()
+      defer out.Close()
    }
-   return xml.Indent(dst, src, "", " ")
+   return xml.Indent(out, in, "", " ")
 }
 
 func (f flags) indent_json() error {
@@ -30,11 +30,14 @@ func (f flags) indent_json() error {
       return err
    }
    defer in.Close()
-   out, err := os.Create(f.output)
-   if err != nil {
-      out = os.Stdout
+   out := os.Stdout
+   if f.output != "" {
+      out, err = os.Create(f.output)
+      if err != nil {
+         return err
+      }
+      defer out.Close()
    }
-   defer out.Close()
    var value any
    if err := json.NewDecoder(in).Decode(&value); err != nil {
       return err
