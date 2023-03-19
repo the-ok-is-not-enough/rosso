@@ -2,14 +2,87 @@ package http
 
 import (
    "2a.pages.dev/rosso/strconv"
+   "bufio"
    "bytes"
    "errors"
    "io"
    "net/http"
    "net/http/httputil"
+   "net/textproto"
+   "net/url"
    "os"
+   "strings"
    "time"
 )
+
+type Request struct {
+   *http.Request
+}
+
+func New_Request() Request {
+   var r Request
+   // first
+   r.Request = new(http.Request)
+   // second
+   r.Header = make(http.Header)
+   r.URL = new(url.URL)
+   return r
+}
+
+func (r Request) Set_Body(body io.Reader) {
+   var ok bool
+   r.Body, ok = body.(io.ReadCloser)
+   if !ok {
+      r.Body = io.NopCloser(body)
+   }
+}
+
+func (r Request) Set_URL(ref string) error {
+   var err error
+   r.URL, err = url.Parse(ref)
+   if err != nil {
+      return err
+   }
+   return nil
+}
+func Read_Request(r *bufio.Reader) (*http.Request, error) {
+   var req http.Request
+   text := textproto.NewReader(r)
+   // .Method
+   raw_method_path, err := text.ReadLine()
+   if err != nil {
+      return nil, err
+   }
+   method_path := strings.Fields(raw_method_path)
+   req.Method = method_path[0]
+   // .URL
+   ref, err := url.Parse(method_path[1])
+   if err != nil {
+      return nil, err
+   }
+   req.URL = ref
+   // .URL.Host
+   head, err := text.ReadMIMEHeader()
+   if err != nil {
+      return nil, err
+   }
+   if req.URL.Host == "" {
+      req.URL.Host = head.Get("Host")
+   }
+   // .Header
+   req.Header = http.Header(head)
+   // .Body
+   buf := new(bytes.Buffer)
+   length, err := text.R.WriteTo(buf)
+   if err != nil {
+      return nil, err
+   }
+   if length >= 1 {
+      req.Body = io.NopCloser(buf)
+   }
+   req.ContentLength = length
+   return &req, nil
+}
 
 func (c Client) Do(req *http.Request) (*http.Response, error) {
    switch c.Log_Level {
@@ -140,8 +213,6 @@ func (p *Progress) Write(data []byte) (int, error) {
    p.bytes_written += write
    return write, err
 }
-
-type Request = http.Request
 
 type Response = http.Response
 

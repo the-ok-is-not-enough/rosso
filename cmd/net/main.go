@@ -1,6 +1,8 @@
 package main
 
 import (
+   "2a.pages.dev/rosso/http"
+   "bufio"
    "flag"
    "os"
 )
@@ -27,7 +29,7 @@ func main() {
          panic(err)
       }
       defer open.Close()
-      req, err := read_request(open)
+      req, err := http.Read_Request(bufio.NewReader(open))
       if err != nil {
          panic(err)
       }
