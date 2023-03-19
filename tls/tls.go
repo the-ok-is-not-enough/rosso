@@ -41,6 +41,42 @@ func (c Client_Hello) UnmarshalBinary(data []byte) error {
    return nil
 }
 
+type Client_Hello struct {
+   *tls.ClientHelloSpec
+}
+
+func New_Client_Hello() Client_Hello {
+   var c Client_Hello
+   c.ClientHelloSpec = new(tls.ClientHelloSpec)
+   return c
+}
+
+// cannot call pointer method RoundTrip on http.Transport
+func (c Client_Hello) Transport() *http.Transport {
+   var tr http.Transport
+   //lint:ignore SA1019 godocs.io/context
+   tr.DialTLS = func(network, ref string) (net.Conn, error) {
+      dial_conn, err := net.Dial(network, ref)
+      if err != nil {
+         return nil, err
+      }
+      host, _, err := net.SplitHostPort(ref)
+      if err != nil {
+         return nil, err
+      }
+      config := &tls.Config{ServerName: host}
+      tls_conn := tls.UClient(dial_conn, config, tls.HelloCustom)
+      if err := tls_conn.ApplyPreset(c.ClientHelloSpec); err != nil {
+         return nil, err
+      }
+      if err := tls_conn.Handshake(); err != nil {
+         return nil, err
+      }
+      return tls_conn, nil
+   }
+   return &tr
+}
+
 // encoding.TextUnmarshaler using JA3
 func (c Client_Hello) UnmarshalText(text []byte) error {
    var (
@@ -204,40 +240,3 @@ func (c Client_Hello) MarshalText() ([]byte, error) {
    }
    return b, nil
 }
-
-type Client_Hello struct {
-   *tls.ClientHelloSpec
-}
-
-func New_Client_Hello() Client_Hello {
-   var c Client_Hello
-   c.ClientHelloSpec = new(tls.ClientHelloSpec)
-   return c
-}
-
-// cannot call pointer method RoundTrip on http.Transport
-func (c Client_Hello) Transport() *http.Transport {
-   var tr http.Transport
-   //lint:ignore SA1019 godocs.io/context
-   tr.DialTLS = func(network, ref string) (net.Conn, error) {
-      dial_conn, err := net.Dial(network, ref)
-      if err != nil {
-         return nil, err
-      }
-      host, _, err := net.SplitHostPort(ref)
-      if err != nil {
-         return nil, err
-      }
-      config := &tls.Config{ServerName: host}
-      tls_conn := tls.UClient(dial_conn, config, tls.HelloCustom)
-      if err := tls_conn.ApplyPreset(c.ClientHelloSpec); err != nil {
-         return nil, err
-      }
-      if err := tls_conn.Handshake(); err != nil {
-         return nil, err
-      }
-      return tls_conn, nil
-   }
-   return &tr
-}
-
