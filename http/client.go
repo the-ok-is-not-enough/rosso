@@ -9,6 +9,36 @@ import (
    "os"
 )
 
+func (c Client) Do(req Request) (*Response, error) {
+   switch c.Log_Level {
+   case 1:
+      os.Stderr.WriteString(req.Method)
+      os.Stderr.WriteString(" ")
+      os.Stderr.WriteString(req.URL.String())
+      os.Stderr.WriteString("\n")
+   case 2:
+      dump, err := httputil.DumpRequest(req.Request, true)
+      if err != nil {
+         return nil, err
+      }
+      if !strconv.Valid(dump) {
+         dump = strconv.AppendQuote(nil, string(dump))
+      }
+      if !bytes.HasSuffix(dump, []byte{'\n'}) {
+         dump = append(dump, '\n')
+      }
+      os.Stderr.Write(dump)
+   }
+   res, err := c.Client.Do(req.Request)
+   if err != nil {
+      return nil, err
+   }
+   if res.StatusCode != c.Status {
+      return nil, errors.New(res.Status)
+   }
+   return res, nil
+}
+
 type Client struct {
    Log_Level int // this needs to work with flag.IntVar
    Status int
@@ -27,34 +57,4 @@ var Default_Client = Client{
 
 func (c Client) Clone() Client {
    return c
-}
-
-func (c Client) Do(req *http.Request) (*http.Response, error) {
-   switch c.Log_Level {
-   case 1:
-      os.Stderr.WriteString(req.Method)
-      os.Stderr.WriteString(" ")
-      os.Stderr.WriteString(req.URL.String())
-      os.Stderr.WriteString("\n")
-   case 2:
-      dump, err := httputil.DumpRequest(req, true)
-      if err != nil {
-         return nil, err
-      }
-      if !strconv.Valid(dump) {
-         dump = strconv.AppendQuote(nil, string(dump))
-      }
-      if !bytes.HasSuffix(dump, []byte{'\n'}) {
-         dump = append(dump, '\n')
-      }
-      os.Stderr.Write(dump)
-   }
-   res, err := c.Client.Do(req)
-   if err != nil {
-      return nil, err
-   }
-   if res.StatusCode != c.Status {
-      return nil, errors.New(res.Status)
-   }
-   return res, nil
 }

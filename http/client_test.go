@@ -26,7 +26,7 @@ func Test_Client(t *testing.T) {
    req := New_Request()
    req.URL.Host = "godocs.io"
    Default_Client.Status = 302
-   res, err := Default_Client.Do(req.Request)
+   res, err := Default_Client.Do(req)
    if err != nil {
       t.Fatal(err)
    }
