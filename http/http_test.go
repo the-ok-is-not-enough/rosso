@@ -2,49 +2,35 @@ package http
 
 import (
    "net/http"
-   "os"
-   "strings"
    "testing"
 )
 
-func Test_Request(t *testing.T) {
+func Test_Client(t *testing.T) {
+   c := Default_Client.Clone()
+   c.Log_Level = 9
+   if Default_Client.Log_Level == 9 {
+      t.Fatal("Level")
+   }
+   c.CheckRedirect = nil
+   if Default_Client.CheckRedirect == nil {
+      t.Fatal("Redirect")
+   }
+   c.Status = 9
+   if Default_Client.Status == 9 {
+      t.Fatal("Status")
+   }
+   c.Transport = new(http.Transport)
+   if Default_Client.Transport != nil {
+      t.Fatal("Transport")
+   }
    req := New_Request()
-   req.URL.Scheme = "http"
-   req.URL.Host = "httpbin.org"
-   req.URL.Path = "/get"
-   res, err := new(http.Transport).RoundTrip(req.Request)
+   req.URL.Host = "godocs.io"
+   Default_Client.Status = 302
+   res, err := Default_Client.Do(req)
    if err != nil {
       t.Fatal(err)
    }
-   defer res.Body.Close()
-   os.Stdout.ReadFrom(res.Body)
-}
-
-func Test_URL(t *testing.T) {
-   req := New_Request()
-   err := req.Set_URL("http://httpbin.org/get")
-   if err != nil {
+   if err := res.Body.Close(); err != nil {
       t.Fatal(err)
    }
-   res, err := new(http.Transport).RoundTrip(req.Request)
-   if err != nil {
-      t.Fatal(err)
-   }
-   defer res.Body.Close()
-   os.Stdout.ReadFrom(res.Body)
-}
-
-func Test_Body(t *testing.T) {
-   req := New_Request()
-   req.Method = "POST"
-   req.URL.Scheme = "http"
-   req.URL.Host = "httpbin.org"
-   req.URL.Path = "/post"
-   req.Set_Body(strings.NewReader("hello=world"))
-   res, err := new(http.Transport).RoundTrip(req.Request)
-   if err != nil {
-      t.Fatal(err)
-   }
-   defer res.Body.Close()
-   os.Stdout.ReadFrom(res.Body)
 }
