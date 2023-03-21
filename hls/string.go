@@ -1,8 +1,8 @@
 package hls
 
 import (
-   "bytes"
    "strconv"
+   "strings"
 )
 
 func (Medium) Ext() string {
@@ -38,57 +38,35 @@ type Stream struct {
 }
 
 func (m Stream) String() string {
-   b := m.Marshal_Indent("\t")
-   return string(b)
-}
-
-func (m Medium) String() string {
-   b := m.Marshal_Indent("\t")
-   return string(b)
-}
-
-func (m Stream) Marshal_Indent(indent string) []byte {
    var b []byte
    b = append(b, "bandwidth: "...)
    b = strconv.AppendInt(b, m.Bandwidth, 10)
    if m.Resolution != "" {
-      b = append(b, '\n')
-      b = append(b, indent...)
-      b = append(b, "resolution: "...)
+      b = append(b, "\n\tresolution: "...)
       b = append(b, m.Resolution...)
    }
    if m.Codecs != "" {
-      b = append(b, '\n')
-      b = append(b, indent...)
-      b = append(b, "codecs: "...)
+      b = append(b, "\n\tcodecs: "...)
       b = append(b, m.Codecs...)
    }
    if m.Audio != "" {
-      b = append(b, '\n')
-      b = append(b, indent...)
-      b = append(b, "audio: "...)
+      b = append(b, "\n\taudio: "...)
       b = append(b, m.Audio...)
    }
-   return b
+   return string(b)
 }
 
-func (m Medium) Marshal_Indent(indent string) []byte {
-   var b bytes.Buffer
+func (m Medium) String() string {
+   var b strings.Builder
    b.WriteString("group ID: ")
    b.WriteString(m.Group_ID)
-   b.WriteByte('\n')
-   b.WriteString(indent)
-   b.WriteString("type: ")
+   b.WriteString("\n\ttype: ")
    b.WriteString(m.Type)
-   b.WriteByte('\n')
-   b.WriteString(indent)
-   b.WriteString("name: ")
+   b.WriteString("\n\tname: ")
    b.WriteString(m.Name)
    if m.Characteristics != "" {
-      b.WriteByte('\n')
-      b.WriteString(indent)
-      b.WriteString("characteristics: ")
+      b.WriteString("\n\tcharacteristics: ")
       b.WriteString(m.Characteristics)
    }
-   return b.Bytes()
+   return b.String()
 }
