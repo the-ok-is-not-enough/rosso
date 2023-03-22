@@ -2,10 +2,8 @@ package tls
 
 import (
    "crypto/md5"
-   "encoding/binary"
    "encoding/hex"
    "github.com/refraction-networking/utls"
-   "io"
    "net"
    "net/http"
 )
@@ -35,27 +33,9 @@ const Android_API_29 =
    "-49172-156-157-47-53,0-23-65281-10-11-35-16-5-13-51-45-43-21,29-23-24,0"
 
 const Android_API_32 = Android_API_29
-func extension_type(ext tls.TLSExtension) (uint16, error) {
-   pad, ok := ext.(*tls.UtlsPaddingExtension)
-   if ok {
-      pad.WillPad = true
-      ext = pad
-   }
-   buf, err := io.ReadAll(ext)
-   if err != nil || len(buf) <= 1 {
-      return 0, err
-   }
-   return binary.BigEndian.Uint16(buf), nil
-}
 
 type Client_Hello struct {
    *tls.ClientHelloSpec
-}
-
-func New_Client_Hello() Client_Hello {
-   var c Client_Hello
-   c.ClientHelloSpec = new(tls.ClientHelloSpec)
-   return c
 }
 
 // cannot call pointer method RoundTrip on http.Transport

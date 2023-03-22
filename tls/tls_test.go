@@ -30,8 +30,8 @@ func Test_Transport(t *testing.T) {
    if err != nil {
       t.Fatal(err)
    }
-   hello := New_Client_Hello()
-   if err := hello.UnmarshalText([]byte(Android_API)); err != nil {
+   hello, err := Parse(Android_API)
+   if err != nil {
       t.Fatal(err)
    }
    res, err := hello.Transport().RoundTrip(req)
