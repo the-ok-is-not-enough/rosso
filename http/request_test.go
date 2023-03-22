@@ -8,7 +8,7 @@ import (
 )
 
 func Test_Request(t *testing.T) {
-   req := New_Request()
+   req := Get()
    req.URL.Scheme = "http"
    req.URL.Host = "httpbin.org"
    req.URL.Path = "/get"
@@ -21,7 +21,7 @@ func Test_Request(t *testing.T) {
 }
 
 func Test_URL(t *testing.T) {
-   req := New_Request()
+   req := Get()
    err := req.Set_URL("http://httpbin.org/get")
    if err != nil {
       t.Fatal(err)
@@ -35,7 +35,7 @@ func Test_URL(t *testing.T) {
 }
 
 func Test_Body(t *testing.T) {
-   req := New_Request()
+   req := Post()
    req.Method = "POST"
    req.URL.Scheme = "http"
    req.URL.Host = "httpbin.org"

@@ -6,20 +6,26 @@ import (
    "net/url"
 )
 
-type Request struct {
-   *http.Request
+func Get() Request {
+   var r Request
+   r.Request = new(http.Request) // .Request
+   r.Header = make(http.Header) // .Request.Header
+   r.Method = "GET" // .Request.Method
+   r.URL = new(url.URL) // .Request.URL
+   return r
 }
 
-func New_Request() Request {
+func Post() Request {
    var r Request
-   // first
-   r.Request = new(http.Request)
-   // second
-   r.Header = make(http.Header)
-   r.Method = "GET"
-   r.URL = new(url.URL)
-   r.URL.Scheme = "http"
+   r.Request = new(http.Request) // .Request
+   r.Header = make(http.Header) // .Request.Header
+   r.Method = "POST" // .Request.Method
+   r.URL = new(url.URL) // .Request.URL
    return r
+}
+
+type Request struct {
+   *http.Request
 }
 
 func (r Request) Set_Body(body io.Reader) {
