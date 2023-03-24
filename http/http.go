@@ -4,10 +4,8 @@ import (
    "2a.pages.dev/rosso/strconv"
    "bufio"
    "bytes"
-   "errors"
    "io"
    "net/http"
-   "net/http/httputil"
    "net/textproto"
    "net/url"
    "os"
@@ -15,54 +13,43 @@ import (
    "time"
 )
 
-type Client struct {
-   Log_Level int // this needs to work with flag.IntVar
-   Status int
-   http.Client
+func Get() Request {
+   var r Request
+   r.Request = new(http.Request) // .Request
+   r.Header = make(http.Header) // .Request.Header
+   r.Method = "GET" // .Request.Method
+   r.URL = new(url.URL) // .Request.URL
+   return r
 }
 
-var Default_Client = Client{
-   Client: http.Client{
-      CheckRedirect: func(*http.Request, []*http.Request) error {
-         return http.ErrUseLastResponse
-      },
-   },
-   Log_Level: 1,
-   Status: http.StatusOK,
+func Post() Request {
+   var r Request
+   r.Request = new(http.Request) // .Request
+   r.Header = make(http.Header) // .Request.Header
+   r.Method = "POST" // .Request.Method
+   r.URL = new(url.URL) // .Request.URL
+   return r
 }
 
-func (c Client) Clone() Client {
-   return c
+type Request struct {
+   *http.Request
 }
 
-func (c Client) Do(req Request) (*Response, error) {
-   switch c.Log_Level {
-   case 1:
-      os.Stderr.WriteString(req.Method)
-      os.Stderr.WriteString(" ")
-      os.Stderr.WriteString(req.URL.String())
-      os.Stderr.WriteString("\n")
-   case 2:
-      dump, err := httputil.DumpRequest(req.Request, true)
-      if err != nil {
-         return nil, err
-      }
-      if !strconv.Valid(dump) {
-         dump = strconv.AppendQuote(nil, string(dump))
-      }
-      if !bytes.HasSuffix(dump, []byte{'\n'}) {
-         dump = append(dump, '\n')
-      }
-      os.Stderr.Write(dump)
+func (r Request) Set_Body(body io.Reader) {
+   var ok bool
+   r.Body, ok = body.(io.ReadCloser)
+   if !ok {
+      r.Body = io.NopCloser(body)
    }
-   res, err := c.Client.Do(req.Request)
+}
+
+func (r Request) Set_URL(ref string) error {
+   var err error
+   r.URL, err = url.Parse(ref)
    if err != nil {
-      return nil, err
+      return err
    }
-   if res.StatusCode != c.Status {
-      return nil, errors.New(res.Status)
-   }
-   return res, nil
+   return nil
 }
 
 func Read_Request(r *bufio.Reader) (*http.Request, error) {
