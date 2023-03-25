@@ -1,36 +1,9 @@
 package strconv
 
-import (
-   "strconv"
-   "unicode/utf8"
-)
-
-// go.dev/ref/spec#String_literals
-func can_backquote(s string) bool {
-   for _, item := range s {
-      if item == '\r' {
-         return false
-      }
-      if item == '`' {
-         return false
-      }
-      if binary(item) {
-         return false
-      }
-   }
-   return utf8.ValidString(s)
-}
-
-func Quote(s string) string {
-   if can_backquote(s) {
-      return "`" + s + "`"
-   }
-   return strconv.Quote(s)
-}
+import "strconv"
 
 var (
    AppendInt = strconv.AppendInt
-   AppendQuote = strconv.AppendQuote
    AppendUint = strconv.AppendUint
 )
 
@@ -111,30 +84,4 @@ type Ordered interface {
 type unit_measure struct {
    factor float64
    name string
-}
-
-// mimesniff.spec.whatwg.org#binary-data-byte
-func binary[T byte|rune](item T) bool {
-   if item <= 0x08 {
-      return true
-   }
-   if item == 0x0B {
-      return true
-   }
-   if item >= 0x0E && item <= 0x1A {
-      return true
-   }
-   if item >= 0x1C && item <= 0x1F {
-      return true
-   }
-   return false
-}
-
-func Valid(p []byte) bool {
-   for _, item := range p {
-      if binary(item) {
-         return false
-      }
-   }
-   return utf8.Valid(p)
 }

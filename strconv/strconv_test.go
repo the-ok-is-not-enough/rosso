@@ -1,10 +1,6 @@
 package strconv
 
-import (
-   "fmt"
-   "testing"
-   "unicode/utf8"
-)
+import "testing"
 
 func Test_Append(t *testing.T) {
    var b []byte
@@ -36,12 +32,4 @@ func Test_Append(t *testing.T) {
    if s := string(b); s != "12.34%" {
       t.Fatal(s)
    }
-}
-
-func Test_Valid(t *testing.T) {
-   s := "\xE0<"
-   for _, r := range s {
-      fmt.Println(utf8.ValidRune(r))
-   }
-   fmt.Println(utf8.ValidString(s))
 }

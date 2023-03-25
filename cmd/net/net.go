@@ -10,7 +10,31 @@ import (
    "net/url"
    "os"
    "text/template"
+   "unicode/utf8"
 )
+
+// go.dev/ref/spec#String_literals
+func can_backquote(s string) bool {
+   for _, item := range s {
+      if item == '\r' {
+         return false
+      }
+      if item == '`' {
+         return false
+      }
+      if binary(item) {
+         return false
+      }
+   }
+   return utf8.ValidString(s)
+}
+
+func quote(s string) string {
+   if can_backquote(s) {
+      return "`" + s + "`"
+   }
+   return strconv.Quote(s)
+}
 
 //go:embed _template.go
 var content embed.FS
@@ -23,7 +47,7 @@ func write_request(req *http.Request, dst io.Writer) error {
          return err
       }
       req.Body = io.NopCloser(bytes.NewReader(body))
-      v.Raw_Req_Body = strconv.Quote(string(body))
+      v.Raw_Req_Body = quote(string(body))
       v.Req_Body = "io.NopCloser(req_body)"
    } else {
       v.Raw_Req_Body = `""`
