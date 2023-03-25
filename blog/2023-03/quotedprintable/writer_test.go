@@ -2,16 +2,12 @@ package quotedprintable
 
 import (
    "fmt"
-   "strings"
    "testing"
 )
 
-const s = "\x01¶'"
+const s = "\x01¶\n'"
 
 func Test_Write(t *testing.T) {
-   var b strings.Builder
-   w := NewWriter(&b)
-   w.Write([]byte(s))
-   w.Close()
-   fmt.Println(b.String())
+   p := Write([]byte(s))
+   fmt.Println(string(p))
 }
