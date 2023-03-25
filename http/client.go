@@ -15,20 +15,6 @@ type Client struct {
    http.Client
 }
 
-var Default_Client = Client{
-   Client: http.Client{
-      CheckRedirect: func(*http.Request, []*http.Request) error {
-         return http.ErrUseLastResponse
-      },
-   },
-   Log_Level: 1,
-   Status: http.StatusOK,
-}
-
-func (c Client) Clone() Client {
-   return c
-}
-
 func (c Client) Do(req Request) (*Response, error) {
    switch c.Log_Level {
    case 1:
@@ -57,4 +43,18 @@ func (c Client) Do(req Request) (*Response, error) {
       return nil, errors.New(res.Status)
    }
    return res, nil
+}
+
+var Default_Client = Client{
+   Client: http.Client{
+      CheckRedirect: func(*http.Request, []*http.Request) error {
+         return http.ErrUseLastResponse
+      },
+   },
+   Log_Level: 1,
+   Status: http.StatusOK,
+}
+
+func (c Client) Clone() Client {
+   return c
 }
