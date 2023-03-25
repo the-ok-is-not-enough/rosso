@@ -27,7 +27,7 @@ func (c Client) Do(req Request) (*Response, error) {
       if err != nil {
          return nil, err
       }
-      if !strconv.Valid(dump) {
+      if strconv.Binary(dump) {
          dump = strconv.AppendQuote(nil, string(dump))
       }
       if !bytes.HasSuffix(dump, []byte{'\n'}) {

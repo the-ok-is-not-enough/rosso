@@ -15,14 +15,15 @@ import (
 
 // go.dev/ref/spec#String_literals
 func can_backquote(s string) bool {
-   for _, item := range s {
-      if item == '\r' {
+   for i := range s {
+      b := s[i]
+      if b == '\r' {
          return false
       }
-      if item == '`' {
+      if b == '`' {
          return false
       }
-      if binary(item) {
+      if strconv.Binary_Byte(b) {
          return false
       }
    }
@@ -68,7 +69,6 @@ type values struct {
    Req_Body string
    Raw_Req_Body string
 }
-
 func write(req *http.Request, file *os.File) error {
    res, err := new(http.Transport).RoundTrip(req)
    if err != nil {
@@ -80,7 +80,7 @@ func write(req *http.Request, file *os.File) error {
       if err != nil {
          return err
       }
-      if !strconv.Valid(dump) {
+      if strconv.Binary(dump) {
          dump = strconv.AppendQuote(nil, string(dump))
       }
       file.Write(dump)
@@ -103,3 +103,4 @@ type flags struct {
    name string
    output string
 }
+
