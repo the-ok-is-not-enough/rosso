@@ -103,4 +103,3 @@ type flags struct {
    name string
    output string
 }
-

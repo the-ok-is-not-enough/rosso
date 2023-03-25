@@ -6,7 +6,6 @@ import (
    "net/http/httputil"
    "testing"
    "time"
-   
    "unicode/utf8"
 )
 
@@ -16,12 +15,6 @@ var refs = []string{
 }
 
 func Test_Quote(t *testing.T) {
-   
-   fmt.Println(utf8.ValidRune(0xFFFD))
-   
-   
-   return
-   
    for _, ref := range refs {
       res, err := http.Get(ref)
       if err != nil {

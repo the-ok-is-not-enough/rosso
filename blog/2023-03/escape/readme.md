@@ -30,11 +30,16 @@ results:
 - https://godocs.io/html#EscapeString
 - https://godocs.io/html/template#HTMLEscapeString
 - https://godocs.io/html/template#JSEscapeString
+- https://godocs.io/mime/quotedprintable#Writer.Write
 - https://godocs.io/net/url#PathEscape
 - https://godocs.io/net/url#QueryEscape
 - https://godocs.io/strconv#Quote
-- https://godocs.io/strconv#QuoteToGraphic
 - https://godocs.io/strconv#QuoteToASCII
+- https://godocs.io/strconv#QuoteToGraphic
 - https://godocs.io/strings#Replacer.Replace
 - https://godocs.io/text/template#HTMLEscapeString
 - https://godocs.io/text/template#JSEscapeString
+
+this looks promising:
+
+https://godocs.io/mime/quotedprintable#Writer.Write
