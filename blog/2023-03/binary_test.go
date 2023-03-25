@@ -1,4 +1,4 @@
-package quotedprintable
+package binary
 
 import (
    "fmt"
@@ -19,7 +19,7 @@ func Test_Binary(t *testing.T) {
    if err := res.Body.Close(); err != nil {
       t.Fatal(err)
    }
-   fmt.Println(string(escape(dump)))
+   fmt.Println(string(encode(dump)))
 }
 
 const (
