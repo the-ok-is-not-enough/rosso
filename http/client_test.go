@@ -5,32 +5,37 @@ import (
    "testing"
 )
 
-func Test_Client(t *testing.T) {
-   c := Default_Client.Clone()
-   c.Log_Level = 9
-   if Default_Client.Log_Level == 9 {
-      t.Fatal("Level")
-   }
+func do(c Client) error {
    c.CheckRedirect = nil
-   if Default_Client.CheckRedirect == nil {
-      t.Fatal("Redirect")
-   }
-   c.Status = 9
-   if Default_Client.Status == 9 {
-      t.Fatal("Status")
-   }
+   c.Log_Level = 9
    c.Transport = new(http.Transport)
-   if Default_Client.Transport != nil {
-      t.Fatal("Transport")
-   }
+   c.Status = 201
    req := Get()
-   req.URL.Host = "godocs.io"
-   Default_Client.Status = 302
-   res, err := Default_Client.Do(req)
+   req.URL.Scheme = "http"
+   req.URL.Host = "httpbin.org"
+   req.URL.Path = "/status/201"
+   res, err := c.Do(req)
+   if err != nil {
+      return err
+   }
+   return res.Body.Close()
+}
+
+func Test_Client(t *testing.T) {
+   err := do(Default_Client)
    if err != nil {
       t.Fatal(err)
    }
-   if err := res.Body.Close(); err != nil {
-      t.Fatal(err)
+   if Default_Client.CheckRedirect == nil {
+      t.Fatal("CheckRedirect")
+   }
+   if Default_Client.Log_Level == 9 {
+      t.Fatal("Log_Level")
+   }
+   if Default_Client.Status == 201 {
+      t.Fatal("Status")
+   }
+   if Default_Client.Transport != nil {
+      t.Fatal("Transport")
    }
 }
