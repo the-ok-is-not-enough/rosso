@@ -4,8 +4,10 @@ import (
    "2a.pages.dev/rosso/strconv"
    "bufio"
    "bytes"
+   "fmt"
    "io"
    "net/http"
+   "net/http/httputil"
    "net/textproto"
    "net/url"
    "os"
@@ -13,43 +15,46 @@ import (
    "time"
 )
 
-func Get() Request {
-   var r Request
-   r.Request = new(http.Request) // .Request
-   r.Header = make(http.Header) // .Request.Header
-   r.Method = "GET" // .Request.Method
-   r.URL = new(url.URL) // .Request.URL
-   return r
+type Client struct {
+   Log_Level int // this needs to work with flag.IntVar
+   Status int
+   http.Client
 }
 
-func Post() Request {
-   var r Request
-   r.Request = new(http.Request) // .Request
-   r.Header = make(http.Header) // .Request.Header
-   r.Method = "POST" // .Request.Method
-   r.URL = new(url.URL) // .Request.URL
-   return r
+var Default_Client = Client{
+   Client: http.Client{
+      CheckRedirect: func(*http.Request, []*http.Request) error {
+         return http.ErrUseLastResponse
+      },
+   },
+   Log_Level: 1,
+   Status: http.StatusOK,
 }
 
-type Request struct {
-   *http.Request
-}
-
-func (r Request) Set_Body(body io.Reader) {
-   var ok bool
-   r.Body, ok = body.(io.ReadCloser)
-   if !ok {
-      r.Body = io.NopCloser(body)
+func (c Client) Do(req Request) (*Response, error) {
+   switch c.Log_Level {
+   case 1:
+      fmt.Println(req.Method, req.URL)
+   case 2:
+      dump, err := httputil.DumpRequest(req.Request, true)
+      if err != nil {
+         return nil, err
+      }
+      enc := strconv.Encode(dump)
+      if strings.HasSuffix(enc, "\n") {
+         fmt.Print(enc)
+      } else {
+         fmt.Println(enc)
+      }
    }
-}
-
-func (r Request) Set_URL(ref string) error {
-   var err error
-   r.URL, err = url.Parse(ref)
+   res, err := c.Client.Do(req.Request)
    if err != nil {
-      return err
+      return nil, err
    }
-   return nil
+   if res.StatusCode != c.Status {
+      return nil, fmt.Errorf(res.Status)
+   }
+   return res, nil
 }
 
 func Read_Request(r *bufio.Reader) (*http.Request, error) {
