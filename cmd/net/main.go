@@ -4,6 +4,7 @@ import (
    "2a.pages.dev/rosso/http"
    "bufio"
    "flag"
+   "io"
    "os"
 )
 
@@ -15,7 +16,7 @@ func main() {
    flag.BoolVar(&f.https, "s", false, "HTTPS")
    flag.Parse()
    if f.name != "" {
-      create := os.Stdout
+      var create io.WriteCloser
       if f.output != "" {
          var err error
          create, err = os.Create(f.output)

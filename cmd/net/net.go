@@ -1,14 +1,16 @@
 package main
 
 import (
-   "2a.pages.dev/rosso/strconv"
+   "2a.pages.dev/rosso/printable"
    "bytes"
    "embed"
+   "fmt"
    "io"
    "net/http"
    "net/http/httputil"
    "net/url"
-   "os"
+   "strconv"
+   "strings"
    "text/template"
    "unicode/utf8"
 )
@@ -23,7 +25,7 @@ func can_backquote(s string) bool {
       if b == '`' {
          return false
       }
-      if strconv.Binary_Byte(b) {
+      if printable.Binary_Byte(b) {
          return false
       }
    }
@@ -69,29 +71,32 @@ type values struct {
    Req_Body string
    Raw_Req_Body string
 }
-func write(req *http.Request, file *os.File) error {
+
+func write(req *http.Request, file io.Writer) error {
    res, err := new(http.Transport).RoundTrip(req)
    if err != nil {
       return err
    }
    defer res.Body.Close()
-   if file == os.Stdout {
-      dump, err := httputil.DumpResponse(res, true)
-      if err != nil {
-         return err
-      }
-      if strconv.Binary(dump) {
-         dump = strconv.AppendQuote(nil, string(dump))
-      }
-      file.Write(dump)
-   } else {
+   if file != nil {
       dump, err := httputil.DumpResponse(res, false)
       if err != nil {
          return err
       }
-      os.Stdout.Write(dump)
-      if _, err := file.ReadFrom(res.Body); err != nil {
+      fmt.Print(string(dump))
+      if _, err := io.Copy(file, res.Body); err != nil {
          return err
+      }
+   } else {
+      dump, err := httputil.DumpResponse(res, true)
+      if err != nil {
+         return err
+      }
+      enc := printable.Encode(dump)
+      if strings.HasSuffix(enc, "\n") {
+         fmt.Print(enc)
+      } else {
+         fmt.Println(enc)
       }
    }
    return nil

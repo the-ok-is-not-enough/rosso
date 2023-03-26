@@ -1,48 +1,43 @@
 package http
 
 import (
-   "2a.pages.dev/rosso/strconv"
-   "bytes"
-   "errors"
+   "2a.pages.dev/rosso/printable"
+   "fmt"
    "net/http"
    "net/http/httputil"
-   "os"
+   "strings"
 )
-
-type Client struct {
-   Log_Level int // this needs to work with flag.IntVar
-   Status int
-   http.Client
-}
 
 func (c Client) Do(req Request) (*Response, error) {
    switch c.Log_Level {
    case 1:
-      os.Stderr.WriteString(req.Method)
-      os.Stderr.WriteString(" ")
-      os.Stderr.WriteString(req.URL.String())
-      os.Stderr.WriteString("\n")
+      fmt.Println(req.Method, req.URL)
    case 2:
       dump, err := httputil.DumpRequest(req.Request, true)
       if err != nil {
          return nil, err
       }
-      if strconv.Binary(dump) {
-         dump = strconv.AppendQuote(nil, string(dump))
+      enc := printable.Encode(dump)
+      if strings.HasSuffix(enc, "\n") {
+         fmt.Print(enc)
+      } else {
+         fmt.Println(enc)
       }
-      if !bytes.HasSuffix(dump, []byte{'\n'}) {
-         dump = append(dump, '\n')
-      }
-      os.Stderr.Write(dump)
    }
    res, err := c.Client.Do(req.Request)
    if err != nil {
       return nil, err
    }
    if res.StatusCode != c.Status {
-      return nil, errors.New(res.Status)
+      return nil, fmt.Errorf(res.Status)
    }
    return res, nil
+}
+
+type Client struct {
+   Log_Level int // this needs to work with flag.IntVar
+   Status int
+   http.Client
 }
 
 var Default_Client = Client{

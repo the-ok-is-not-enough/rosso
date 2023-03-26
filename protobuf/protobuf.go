@@ -1,8 +1,9 @@
 package protobuf
 
 import (
-   "2a.pages.dev/rosso/strconv"
+   "2a.pages.dev/rosso/printable"
    "google.golang.org/protobuf/encoding/protowire"
+   "strconv"
 )
 
 // If you need fmt.GoStringer with indent, just use `go fmt`.
@@ -180,9 +181,7 @@ func (m Message) consume_raw(num Number, buf []byte) ([]byte, error) {
    if err != nil {
       return nil, err
    }
-   if !strconv.Binary(rvalue.Bytes) {
-      rvalue.String = string(rvalue.Bytes)
-   }
+   rvalue.String = printable.Encode(rvalue.Bytes)
    rvalue.Message, _ = Unmarshal(rvalue.Bytes)
    switch lvalue := m[num].(type) {
    case nil:
