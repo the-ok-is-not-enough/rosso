@@ -1,11 +1,31 @@
-package strconv
+package printable
 
 import "strconv"
 
-var (
-   AppendInt = strconv.AppendInt
-   AppendUint = strconv.AppendUint
-)
+type unit_measure struct {
+   factor float64
+   name string
+}
+
+func (n Number) label(dst []byte, unit unit_measure) []byte {
+   var prec int
+   if unit.factor != 1 {
+      prec = 2
+   }
+   unit.factor *= float64(n)
+   dst = strconv.AppendFloat(dst, unit.factor, 'f', prec, 64)
+   return append(dst, unit.name...)
+}
+
+func (n Number) scale(dst []byte, units []unit_measure) []byte {
+   var unit unit_measure
+   for _, unit = range units {
+      if unit.factor * float64(n) < 1000 {
+         break
+      }
+   }
+   return n.label(dst, unit)
+}
 
 type Number float64
 
@@ -15,6 +35,12 @@ func New_Number[T Ordered](value T) Number {
 
 func Ratio[T, U Ordered](num T, den U) Number {
    return Number(num) / Number(den)
+}
+
+type Ordered interface {
+   ~float32 | ~float64 |
+   ~int | ~int8 | ~int16 | ~int32 | ~int64 |
+   ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
 }
 
 func (n Number) Cardinal(dst []byte) []byte {
@@ -53,35 +79,4 @@ func (n Number) Size(dst []byte) []byte {
       {1e-12, " terabyte"},
    }
    return n.scale(dst, units)
-}
-
-func (n Number) label(dst []byte, unit unit_measure) []byte {
-   var prec int
-   if unit.factor != 1 {
-      prec = 2
-   }
-   unit.factor *= float64(n)
-   dst = strconv.AppendFloat(dst, unit.factor, 'f', prec, 64)
-   return append(dst, unit.name...)
-}
-
-func (n Number) scale(dst []byte, units []unit_measure) []byte {
-   var unit unit_measure
-   for _, unit = range units {
-      if unit.factor * float64(n) < 1000 {
-         break
-      }
-   }
-   return n.label(dst, unit)
-}
-
-type Ordered interface {
-   ~float32 | ~float64 |
-   ~int | ~int8 | ~int16 | ~int32 | ~int64 |
-   ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
-}
-
-type unit_measure struct {
-   factor float64
-   name string
 }

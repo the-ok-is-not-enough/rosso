@@ -1,14 +1,6 @@
-package strconv
+package printable
 
-import (
-   "strconv"
-   "unicode/utf8"
-)
-
-var (
-   AppendQuote = strconv.AppendQuote
-   Quote = strconv.Quote
-)
+import "unicode/utf8"
 
 func Binary(p []byte) bool {
    for _, b := range p {
@@ -23,7 +15,7 @@ func Binary(p []byte) bool {
 
 // mimesniff.spec.whatwg.org#binary-data-byte
 func Binary_Byte(b byte) bool {
-   if b >= 0x00 && b <= 0x08 {
+   if b <= 0x08 {
       return true
    }
    if b == 0x0B {
