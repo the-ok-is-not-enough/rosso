@@ -5,20 +5,17 @@ import (
    "testing"
 )
 
-type test_client struct {
-   Client
-}
-
-func (t test_client) do() error {
-   t.CheckRedirect = nil
-   t.Log_Level = 9
-   t.Transport = new(http.Transport)
-   t.Status = 201
+func do() error {
+   c := Default_Client
+   c.CheckRedirect = nil
+   c.Log_Level = 9
+   c.Transport = new(http.Transport)
+   c.Status = 201
    req := Get()
    req.URL.Scheme = "http"
    req.URL.Host = "httpbin.org"
    req.URL.Path = "/status/201"
-   res, err := t.Do(req)
+   res, err := c.Do(req)
    if err != nil {
       return err
    }
@@ -26,7 +23,7 @@ func (t test_client) do() error {
 }
 
 func Test_Client(t *testing.T) {
-   err := test_client{Default_Client}.do()
+   err := do()
    if err != nil {
       t.Fatal(err)
    }
