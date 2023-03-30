@@ -35,6 +35,10 @@ func New_Request(method string, ref *url.URL) *Request {
    return &Request{&req}
 }
 
+func Patch() *Request {
+   return New_Request(http.MethodPatch, new(url.URL))
+}
+
 func Post() *Request {
    return New_Request(http.MethodPost, new(url.URL))
 }
@@ -45,6 +49,10 @@ func Post_URL(ref string) (*Request, error) {
       return nil, err
    }
    return New_Request(http.MethodPost, href), nil
+}
+
+func Put() *Request {
+   return New_Request(http.MethodPut, new(url.URL))
 }
 
 func (r Request) Body_Bytes(b []byte) {
