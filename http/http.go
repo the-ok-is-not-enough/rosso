@@ -4,8 +4,10 @@ import (
    "2a.pages.dev/rosso/strconv"
    "bufio"
    "bytes"
+   "fmt"
    "io"
    "net/http"
+   "net/http/httputil"
    "net/textproto"
    "net/url"
    "os"
@@ -13,53 +15,54 @@ import (
    "time"
 )
 
-type Request struct {
-   *http.Request
-}
-
-func Get() *Request {
-   return New_Request(http.MethodGet, new(url.URL))
-}
-
-func Get_URL(ref string) (*Request, error) {
-   href, err := url.Parse(ref)
+func (c Client) Get(ref string) (*Response, error) {
+   req, err := Get_URL(ref)
    if err != nil {
       return nil, err
    }
-   return New_Request(http.MethodGet, href), nil
+   return c.Do(req)
 }
 
-func New_Request(method string, ref *url.URL) *Request {
-   req := http.Request{
-      Header: make(http.Header),
-      Method: method,
-      ProtoMajor: 1,
-      ProtoMinor: 1,
-      URL: ref,
+func (c Client) Do(req *Request) (*Response, error) {
+   switch c.Log_Level {
+   case 1:
+      fmt.Println(req.Method, req.URL)
+   case 2:
+      dump, err := httputil.DumpRequest(req.Request, true)
+      if err != nil {
+         return nil, err
+      }
+      enc := strconv.Encode(dump)
+      if strings.HasSuffix(enc, "\n") {
+         fmt.Print(enc)
+      } else {
+         fmt.Println(enc)
+      }
    }
-   return &Request{&req}
-}
-
-func Post(body []byte) *Request {
-   req := New_Request(http.MethodPost, new(url.URL))
-   req.Body = io.NopCloser(bytes.NewReader(body))
-   return req
-}
-
-func Post_Text(body string) *Request {
-   req := New_Request(http.MethodPost, new(url.URL))
-   req.Body = io.NopCloser(strings.NewReader(body))
-   return req
-}
-
-func Post_URL(ref string, body []byte) (*Request, error) {
-   href, err := url.Parse(ref)
+   res, err := c.Client.Do(req.Request)
    if err != nil {
       return nil, err
    }
-   req := New_Request(http.MethodPost, href)
-   req.Body = io.NopCloser(bytes.NewReader(body))
-   return req, nil
+   if res.StatusCode != c.Status {
+      return nil, fmt.Errorf(res.Status)
+   }
+   return res, nil
+}
+
+type Client struct {
+   Log_Level int // this needs to work with flag.IntVar
+   Status int
+   http.Client
+}
+
+var Default_Client = Client{
+   Client: http.Client{
+      CheckRedirect: func(*http.Request, []*http.Request) error {
+         return http.ErrUseLastResponse
+      },
+   },
+   Log_Level: 1,
+   Status: http.StatusOK,
 }
 
 func Read_Request(r *bufio.Reader) (*http.Request, error) {
