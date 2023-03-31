@@ -1,7 +1,7 @@
 package main
 
 import (
-   "2a.pages.dev/rosso/http"
+   "the-ok-is-not-enough/rosso/http"
    "bufio"
    "flag"
    "io"

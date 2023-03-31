@@ -1,7 +1,7 @@
 package main
 
 import (
-   "2a.pages.dev/rosso/xml"
+   "the-ok-is-not-enough/rosso/xml"
    "encoding/json"
    "flag"
    "os"

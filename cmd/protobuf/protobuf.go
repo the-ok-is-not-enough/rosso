@@ -1,7 +1,7 @@
 package main
 
 import (
-   "2a.pages.dev/rosso/protobuf"
+   "the-ok-is-not-enough/rosso/protobuf"
    "encoding/json"
    "flag"
    "os"

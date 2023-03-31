@@ -1,7 +1,7 @@
 package main
 
 import (
-   "2a.pages.dev/rosso/strconv"
+   "the-ok-is-not-enough/rosso/strconv"
    "bytes"
    "embed"
    "fmt"

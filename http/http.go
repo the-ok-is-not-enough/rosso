@@ -1,7 +1,7 @@
 package http
 
 import (
-   "2a.pages.dev/rosso/strconv"
+   "the-ok-is-not-enough/rosso/strconv"
    "bufio"
    "bytes"
    "fmt"

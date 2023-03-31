@@ -1,4 +1,4 @@
-module 2a.pages.dev/rosso
+module the-ok-is-not-enough/rosso
 
 go 1.19
 
