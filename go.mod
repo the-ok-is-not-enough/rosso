@@ -1,4 +1,4 @@
-module the-ok-is-not-enough/rosso
+module github.com/the-ok-is-not-enough/rosso
 
 go 1.19
 
